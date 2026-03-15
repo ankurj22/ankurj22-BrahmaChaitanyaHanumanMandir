@@ -18,7 +18,7 @@
     </style>
 </head>
 <body class="p-4 md:p-8">
-    <div class="max-w-4xl mx-auto" id="app">
+    <div class="max-w-6xl mx-auto" id="app">
         <!-- Header Section -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <h1 class="text-2xl md:text-3xl font-bold text-blue-400">Inventory List</h1>
@@ -27,10 +27,8 @@
 
         <!-- Responsive Table Container -->
         <div class="glass rounded-2xl overflow-hidden mb-8 shadow-xl">
-            <!-- This div allows horizontal scrolling on small screens -->
             <div class="overflow-x-auto w-full">
-                <!-- min-w-[600px] ensures columns don't get squashed on mobile -->
-                <table class="w-full text-left min-w-[600px]">
+                <table class="w-full text-left min-w-[900px]">
                     <thead class="bg-white/10 text-blue-300">
                         <tr>
                             <th class="p-3 md:p-4 text-sm md:text-base">Item Name</th>
@@ -42,13 +40,13 @@
                         </tr>
                     </thead>
                     <tbody id="inventoryList">
-                        <tr><td colspan="5" class="p-8 text-center text-gray-500">Loading shared data...</td></tr>
+                        <tr><td colspan="6" class="p-8 text-center text-gray-500">Loading shared data...</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- Action Buttons - Stacked on mobile, row on larger screens -->
+        <!-- Action Buttons -->
         <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
             <button id="manageBtn" onclick="enterManageMode()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 px-10 py-3 rounded-full font-bold transition-all shadow-lg active:scale-95">Manage</button>
             <button id="saveBtn" onclick="saveChanges()" class="edit-only w-full sm:w-auto bg-green-600 hover:bg-green-500 px-10 py-3 rounded-full font-bold transition-all shadow-lg active:scale-95">Save All Changes</button>
@@ -67,7 +65,7 @@
                 inventory = await res.json();
                 render();
             } catch (e) {
-                document.getElementById('inventoryList').innerHTML = '<tr><td colspan="5" class="p-8 text-center text-red-400">Error loading data.</td></tr>';
+                document.getElementById('inventoryList').innerHTML = '<tr><td colspan="6" class="p-8 text-center text-red-400">Error loading data.</td></tr>';
             }
         }
 
@@ -76,6 +74,8 @@
             list.innerHTML = inventory.map((item, index) => {
                 const remaining = Math.max(0, item.total - item.received);
                 const unitDisplay = item.unit || "-";
+                const donatorsDisplay = item.donators || "No records";
+                
                 return `
                 <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
                     <td class="p-3 md:p-4">
@@ -98,15 +98,15 @@
                         ${remaining} <span class="text-[10px] uppercase opacity-60">${unitDisplay}</span>
                     </td>
                     <td class="p-3 md:p-4">
-                        <span class="view-only text-xs italic text-blue-200/70">${giversDisplay}</span>
-                        <input class="edit-only text-sm" style="width:180px" type="text" value="${item.givers || ''}" placeholder="e.g. John-5, Mike-10" onchange="updateLocal(${index}, 'givers', this.value)">
+                        <span class="view-only text-xs italic text-blue-200/60">${donatorsDisplay}</span>
+                        <input class="edit-only text-sm" style="width:180px" type="text" value="${item.donators || ''}" placeholder="Name - Qty" onchange="updateLocal(${index}, 'donators', this.value)">
                     </td>
                 </tr>`;
-            }).join('') || '<tr><td colspan="5" class="p-8 text-center text-gray-500">No items found. Click "Manage" to add.</td></tr>';
+            }).join('') || '<tr><td colspan="6" class="p-8 text-center text-gray-500">No items found. Click "Manage" to add.</td></tr>';
         }
 
         function updateLocal(index, field, value) {
-            if (['name', 'unit', 'givers'].includes(field)) {
+            if (['name', 'unit', 'donators'].includes(field)) {
                 inventory[index][field] = value;
             } else {
                 inventory[index][field] = parseInt(value) || 0;
@@ -115,7 +115,7 @@
         }
 
         function addNewRow() {
-            inventory.push({ name: "New Item", unit: "", total: 0, received: 0, givers: "" });
+            inventory.push({ name: "New Item", unit: "", total: 0, received: 0, donators: "" });
             render();
         }
 

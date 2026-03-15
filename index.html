@@ -85,18 +85,30 @@
             render();
         }
 
-        function enterManageMode() {
-            const pass = prompt("Enter Password to Manage:");
-            if (pass) {
-                sessionPassword = pass;
-                isEditing = true;
-                document.getElementById('app').classList.add('editing');
-                document.getElementById('manageBtn').style.display = 'none';
-                document.getElementById('statusBadge').innerText = "Edit Mode";
-                document.getElementById('statusBadge').className = "px-3 py-1 rounded text-sm bg-orange-600";
-                render();
-            }
-        }
+        async function enterManageMode() {
+    const pass = prompt("Enter Password to Manage:");
+    if (!pass) return;
+
+    // Check with the server first
+    const res = await fetch('/api/verify', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ password: pass })
+    });
+
+    if (res.ok) {
+        // Only enter edit mode if the server says the password is correct
+        sessionPassword = pass;
+        isEditing = true;
+        document.getElementById('app').classList.add('editing');
+        document.getElementById('manageBtn').style.display = 'none';
+        document.getElementById('statusBadge').innerText = "Edit Mode";
+        document.getElementById('statusBadge').className = "px-3 py-1 rounded text-sm bg-orange-600";
+        render();
+    } else {
+        alert("Invalid Password. Access Denied.");
+    }
+}
 
         async function saveChanges() {
             const res = await fetch('/api/inventory', {

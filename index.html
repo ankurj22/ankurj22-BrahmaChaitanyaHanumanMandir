@@ -1,61 +1,116 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"><title>BrahmaChaitanya Hanuman Mandir - Inventory</title>
+    <meta charset="UTF-8"><title>Inventory Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #0f172a; color: white; padding: 2rem; }
+        .glass { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); }
+        input { background: #1e293b; color: white; border: 1px solid #334155; padding: 4px 8px; border-radius: 4px; width: 80px; }
+        .edit-only { display: none; }
+        .editing .edit-only { display: inline-block; }
+        .editing .view-only { display: none; }
+    </style>
 </head>
-<body class="bg-slate-900 text-white p-8">
-    <div class="max-w-2xl mx-auto">
-        <h1 class="text-3xl font-bold mb-6 text-blue-400">Shared Inventory</h1>
-        <div id="list" class="space-y-4 mb-8">Loading shared data...</div>
-        
-        <div class="bg-slate-800 p-6 rounded-xl border border-white/10">
-            <h2 class="text-xl mb-4">Update Item</h2>
-            <div class="grid gap-3">
-                <input id="pass" type="password" placeholder="Enter Creds" class="bg-slate-700 p-2 rounded">
-                <input id="name" type="text" placeholder="Item Name" class="bg-slate-700 p-2 rounded">
-                <input id="received" type="number" placeholder="Received Quantity" class="bg-slate-700 p-2 rounded">
-                <button onclick="updateDB()" class="bg-blue-600 p-2 rounded font-bold">Update Shared List</button>
-            </div>
+<body>
+    <div class="max-w-4xl mx-auto" id="app">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-blue-400">Inventory List</h1>
+            <div id="statusBadge" class="px-3 py-1 rounded text-sm bg-gray-700">View Only</div>
+        </div>
+
+        <div class="glass rounded-2xl overflow-hidden mb-6">
+            <table class="w-full text-left">
+                <thead class="bg-white/10 text-blue-300">
+                    <tr>
+                        <th class="p-4">Item Name</th>
+                        <th class="p-4">Required</th>
+                        <th class="p-4">Received</th>
+                        <th class="p-4">Remaining</th>
+                    </tr>
+                </thead>
+                <tbody id="inventoryList"></tbody>
+            </table>
+        </div>
+
+        <div class="flex justify-center gap-4">
+            <button id="manageBtn" onclick="enterManageMode()" class="bg-blue-600 hover:bg-blue-500 px-8 py-2 rounded-full font-bold transition">Manage</button>
+            <button id="saveBtn" onclick="saveChanges()" class="edit-only bg-green-600 hover:bg-green-500 px-8 py-2 rounded-full font-bold transition">Save All Changes</button>
+            <button id="addBtn" onclick="addNewRow()" class="edit-only bg-gray-700 hover:bg-gray-600 px-8 py-2 rounded-full font-bold">Add Item</button>
         </div>
     </div>
 
     <script>
-        let currentList = [];
+        let inventory = [];
+        let isEditing = false;
+        let sessionPassword = "";
+
         async function load() {
             const res = await fetch('/api/inventory');
-            currentList = await res.json();
+            inventory = await res.json();
             render();
         }
 
         function render() {
-            const container = document.getElementById('list');
-            container.innerHTML = currentList.map(item => `
-                <div class="flex justify-between border-b border-white/10 pb-2">
-                    <span>${item.name}</span>
-                    <span>Received: <b>${item.received}</b></span>
-                </div>
-            `).join('') || "No items yet.";
+            const list = document.getElementById('inventoryList');
+            const app = document.getElementById('app');
+            list.innerHTML = inventory.map((item, index) => {
+                const remaining = Math.max(0, item.total - item.received);
+                return `
+                <tr class="border-b border-white/5 hover:bg-white/5">
+                    <td class="p-4">
+                        <span class="view-only">${item.name}</span>
+                        <input class="edit-only" style="width:150px" type="text" value="${item.name}" onchange="updateLocal(${index}, 'name', this.value)">
+                    </td>
+                    <td class="p-4">
+                        <span class="view-only">${item.total}</span>
+                        <input class="edit-only" type="number" value="${item.total}" onchange="updateLocal(${index}, 'total', this.value)">
+                    </td>
+                    <td class="p-4">
+                        <span class="view-only">${item.received}</span>
+                        <input class="edit-only" type="number" value="${item.received}" onchange="updateLocal(${index}, 'received', this.value)">
+                    </td>
+                    <td class="p-4 font-bold ${remaining > 0 ? 'text-orange-400' : 'text-green-400'}">${remaining}</td>
+                </tr>`;
+            }).join('') || '<tr><td colspan="4" class="p-8 text-center text-gray-500">No items found.</td></tr>';
         }
 
-        async function updateDB() {
-            const password = document.getElementById('pass').value;
-            const name = document.getElementById('name').value;
-            const received = parseInt(document.getElementById('received').value);
+        function updateLocal(index, field, value) {
+            inventory[index][field] = field === 'name' ? value : parseInt(value);
+            render(); // Refresh math
+        }
 
-            // Find item and update or add new
-            const index = currentList.findIndex(i => i.name === name);
-            if(index > -1) currentList[index].received = received;
-            else currentList.push({name, received});
+        function addNewRow() {
+            inventory.push({ name: "New Item", total: 0, received: 0 });
+            render();
+        }
 
+        function enterManageMode() {
+            const pass = prompt("Enter Password to Manage:");
+            if (pass) {
+                sessionPassword = pass;
+                isEditing = true;
+                document.getElementById('app').classList.add('editing');
+                document.getElementById('manageBtn').style.display = 'none';
+                document.getElementById('statusBadge').innerText = "Edit Mode";
+                document.getElementById('statusBadge').className = "px-3 py-1 rounded text-sm bg-orange-600";
+                render();
+            }
+        }
+
+        async function saveChanges() {
             const res = await fetch('/api/inventory', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ password, updatedList: currentList })
+                body: JSON.stringify({ password: sessionPassword, updatedList: inventory })
             });
 
-            if(res.ok) { alert('Updated for everyone!'); load(); }
-            else { alert('Wrong credentials!'); }
+            if(res.ok) {
+                alert('Saved successfully!');
+                location.reload(); // Reset to view mode
+            } else {
+                alert('Invalid Credentials. Changes not saved.');
+            }
         }
         load();
     </script>

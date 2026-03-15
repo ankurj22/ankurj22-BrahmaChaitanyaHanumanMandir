@@ -1,4 +1,3 @@
-console.log("Checking password. Target is set:", !!process.env.UPDATE_PASSWORD);
 const MASTER_PASSWORD = process.env.UPDATE_PASSWORD;
 
 export default async function handler(req, res) {

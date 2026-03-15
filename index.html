@@ -1,42 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"><title>Inventory Manager</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory - BrahmaChaitanyaHanumanMandir</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background: #0f172a; color: white; padding: 2rem; }
+        body { background: #0f172a; color: white; }
+        /* Glass effect for the table container */
         .glass { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); }
+        /* Styling for inputs in edit mode */
         input { background: #1e293b; color: white; border: 1px solid #334155; padding: 4px 8px; border-radius: 4px; width: 80px; }
         .edit-only { display: none; }
         .editing .edit-only { display: inline-block; }
         .editing .view-only { display: none; }
     </style>
 </head>
-<body>
+<body class="p-4 md:p-8">
     <div class="max-w-4xl mx-auto" id="app">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-3xl font-bold text-blue-400">Inventory List</h1>
-            <div id="statusBadge" class="px-3 py-1 rounded text-sm bg-gray-700">View Only</div>
+        <!-- Header Section -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <h1 class="text-2xl md:text-3xl font-bold text-blue-400">Inventory List</h1>
+            <div id="statusBadge" class="px-3 py-1 rounded text-xs md:text-sm bg-gray-700 font-medium">View Only</div>
         </div>
 
-        <div class="glass rounded-2xl overflow-hidden mb-6">
-            <table class="w-full text-left">
-                <thead class="bg-white/10 text-blue-300">
-                    <tr>
-                        <th class="p-4">Item Name</th>
-                        <th class="p-4">Required</th>
-                        <th class="p-4">Received</th>
-                        <th class="p-4">Remaining</th>
-                    </tr>
-                </thead>
-                <tbody id="inventoryList"></tbody>
-            </table>
+        <!-- Responsive Table Container -->
+        <div class="glass rounded-2xl overflow-hidden mb-8 shadow-xl">
+            <!-- This div allows horizontal scrolling on small screens -->
+            <div class="overflow-x-auto w-full">
+                <!-- min-w-[600px] ensures columns don't get squashed on mobile -->
+                <table class="w-full text-left min-w-[600px]">
+                    <thead class="bg-white/10 text-blue-300">
+                        <tr>
+                            <th class="p-3 md:p-4 text-sm md:text-base">Item Name</th>
+                            <th class="p-3 md:p-4 text-sm md:text-base">Required</th>
+                            <th class="p-3 md:p-4 text-sm md:text-base">Received</th>
+                            <th class="p-3 md:p-4 text-sm md:text-base">Remaining</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryList">
+                        <tr><td colspan="4" class="p-8 text-center text-gray-500">Loading shared data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <div class="flex justify-center gap-4">
-            <button id="manageBtn" onclick="enterManageMode()" class="bg-blue-600 hover:bg-blue-500 px-8 py-2 rounded-full font-bold transition">Manage</button>
-            <button id="saveBtn" onclick="saveChanges()" class="edit-only bg-green-600 hover:bg-green-500 px-8 py-2 rounded-full font-bold transition">Save All Changes</button>
-            <button id="addBtn" onclick="addNewRow()" class="edit-only bg-gray-700 hover:bg-gray-600 px-8 py-2 rounded-full font-bold">Add Item</button>
+        <!-- Action Buttons - Stacked on mobile, row on larger screens -->
+        <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
+            <button id="manageBtn" onclick="enterManageMode()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 px-10 py-3 rounded-full font-bold transition-all shadow-lg active:scale-95">Manage</button>
+            <button id="saveBtn" onclick="saveChanges()" class="edit-only w-full sm:w-auto bg-green-600 hover:bg-green-500 px-10 py-3 rounded-full font-bold transition-all shadow-lg active:scale-95">Save All Changes</button>
+            <button id="addBtn" onclick="addNewRow()" class="edit-only w-full sm:w-auto bg-gray-700 hover:bg-gray-600 px-10 py-3 rounded-full font-bold shadow-lg">Add Item</button>
         </div>
     </div>
 
@@ -46,38 +60,41 @@
         let sessionPassword = "";
 
         async function load() {
-            const res = await fetch('/api/inventory');
-            inventory = await res.json();
-            render();
+            try {
+                const res = await fetch('/api/inventory');
+                inventory = await res.json();
+                render();
+            } catch (e) {
+                document.getElementById('inventoryList').innerHTML = '<tr><td colspan="4" class="p-8 text-center text-red-400">Error loading data.</td></tr>';
+            }
         }
 
         function render() {
             const list = document.getElementById('inventoryList');
-            const app = document.getElementById('app');
             list.innerHTML = inventory.map((item, index) => {
                 const remaining = Math.max(0, item.total - item.received);
                 return `
-                <tr class="border-b border-white/5 hover:bg-white/5">
-                    <td class="p-4">
-                        <span class="view-only">${item.name}</span>
-                        <input class="edit-only" style="width:150px" type="text" value="${item.name}" onchange="updateLocal(${index}, 'name', this.value)">
+                <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+                    <td class="p-3 md:p-4">
+                        <span class="view-only text-sm md:text-base">${item.name}</span>
+                        <input class="edit-only text-sm" style="width:140px" type="text" value="${item.name}" onchange="updateLocal(${index}, 'name', this.value)">
                     </td>
-                    <td class="p-4">
-                        <span class="view-only">${item.total}</span>
-                        <input class="edit-only" type="number" value="${item.total}" onchange="updateLocal(${index}, 'total', this.value)">
+                    <td class="p-3 md:p-4">
+                        <span class="view-only text-sm md:text-base">${item.total}</span>
+                        <input class="edit-only text-sm" type="number" value="${item.total}" onchange="updateLocal(${index}, 'total', this.value)">
                     </td>
-                    <td class="p-4">
-                        <span class="view-only">${item.received}</span>
-                        <input class="edit-only" type="number" value="${item.received}" onchange="updateLocal(${index}, 'received', this.value)">
+                    <td class="p-3 md:p-4">
+                        <span class="view-only text-sm md:text-base">${item.received}</span>
+                        <input class="edit-only text-sm" type="number" value="${item.received}" onchange="updateLocal(${index}, 'received', this.value)">
                     </td>
-                    <td class="p-4 font-bold ${remaining > 0 ? 'text-orange-400' : 'text-green-400'}">${remaining}</td>
+                    <td class="p-3 md:p-4 font-bold text-sm md:text-base ${remaining > 0 ? 'text-orange-400' : 'text-green-400'}">${remaining}</td>
                 </tr>`;
-            }).join('') || '<tr><td colspan="4" class="p-8 text-center text-gray-500">No items found.</td></tr>';
+            }).join('') || '<tr><td colspan="4" class="p-8 text-center text-gray-500">No items found. Click "Manage" to add.</td></tr>';
         }
 
         function updateLocal(index, field, value) {
-            inventory[index][field] = field === 'name' ? value : parseInt(value);
-            render(); // Refresh math
+            inventory[index][field] = field === 'name' ? value : (parseInt(value) || 0);
+            render(); 
         }
 
         function addNewRow() {
@@ -86,29 +103,28 @@
         }
 
         async function enterManageMode() {
-    const pass = prompt("Enter Password to Manage:");
-    if (!pass) return;
+            const pass = prompt("Enter Password to Manage:");
+            if (!pass) return;
 
-    // Check with the server first
-    const res = await fetch('/api/verify', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ password: pass })
-    });
+            const res = await fetch('/api/verify', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ password: pass })
+            });
 
-    if (res.ok) {
-        // Only enter edit mode if the server says the password is correct
-        sessionPassword = pass;
-        isEditing = true;
-        document.getElementById('app').classList.add('editing');
-        document.getElementById('manageBtn').style.display = 'none';
-        document.getElementById('statusBadge').innerText = "Edit Mode";
-        document.getElementById('statusBadge').className = "px-3 py-1 rounded text-sm bg-orange-600";
-        render();
-    } else {
-        alert("Invalid Password. Access Denied.");
-    }
-}
+            if (res.ok) {
+                sessionPassword = pass;
+                isEditing = true;
+                document.getElementById('app').classList.add('editing');
+                document.getElementById('manageBtn').style.display = 'none';
+                const badge = document.getElementById('statusBadge');
+                badge.innerText = "Edit Mode";
+                badge.className = "px-3 py-1 rounded text-xs bg-orange-600 font-bold animate-pulse";
+                render();
+            } else {
+                alert("Invalid Password. Access Denied.");
+            }
+        }
 
         async function saveChanges() {
             const res = await fetch('/api/inventory', {
@@ -119,7 +135,7 @@
 
             if(res.ok) {
                 alert('Saved successfully!');
-                location.reload(); // Reset to view mode
+                location.reload(); 
             } else {
                 alert('Invalid Credentials. Changes not saved.');
             }

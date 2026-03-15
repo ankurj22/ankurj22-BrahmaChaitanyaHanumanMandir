@@ -1,85 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventory Tracker</title>
+    <meta charset="UTF-8"><title>BrahmaChaitanya Hanuman Mandir - Inventory</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { background: #0f172a; color: white; min-height: 100vh; padding: 2rem; font-family: sans-serif; }
-        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        input { background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255, 255, 255, 0.2); color: white; padding: 0.5rem; border-radius: 0.5rem; }
-    </style>
 </head>
-<body>
-    <div class="max-w-4xl mx-auto">
-        <div class="glass p-8 rounded-3xl shadow-2xl mb-8">
-            <h1 class="text-3xl font-bold mb-6 text-blue-400">Inventory Tracker</h1>
-            <form id="itemForm" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <input type="text" id="itemName" placeholder="Item Name" required>
-                <input type="number" id="totalReq" placeholder="Total Required" required min="0">
-                <input type="number" id="received" placeholder="Received So Far" required min="0">
-                <button type="submit" class="bg-blue-600 hover:bg-blue-500 rounded-lg font-bold transition">Add Item</button>
-            </form>
-        </div>
-
-        <div class="glass rounded-3xl overflow-hidden">
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="bg-white/10 text-blue-300">
-                        <th class="p-4">Item Name</th>
-                        <th class="p-4">Total Required</th>
-                        <th class="p-4">Received</th>
-                        <th class="p-4">Remaining</th>
-                        <th class="p-4">Action</th>
-                    </tr>
-                </thead>
-                <tbody id="inventoryList"></tbody>
-            </table>
+<body class="bg-slate-900 text-white p-8">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6 text-blue-400">Shared Inventory</h1>
+        <div id="list" class="space-y-4 mb-8">Loading shared data...</div>
+        
+        <div class="bg-slate-800 p-6 rounded-xl border border-white/10">
+            <h2 class="text-xl mb-4">Update Item</h2>
+            <div class="grid gap-3">
+                <input id="pass" type="password" placeholder="Enter Creds" class="bg-slate-700 p-2 rounded">
+                <input id="name" type="text" placeholder="Item Name" class="bg-slate-700 p-2 rounded">
+                <input id="received" type="number" placeholder="Received Quantity" class="bg-slate-700 p-2 rounded">
+                <button onclick="updateDB()" class="bg-blue-600 p-2 rounded font-bold">Update Shared List</button>
+            </div>
         </div>
     </div>
 
     <script>
-        const form = document.getElementById('itemForm');
-        const list = document.getElementById('inventoryList');
-        let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
+        let currentList = [];
+        async function load() {
+            const res = await fetch('/api/inventory');
+            currentList = await res.json();
+            render();
+        }
 
-        function saveAndRender() {
-            localStorage.setItem('inventory', JSON.stringify(inventory));
-            list.innerHTML = '';
-            inventory.forEach((item, index) => {
-                const remaining = Math.max(0, item.total - item.received);
-                const row = document.createElement('tr');
-                row.className = "border-b border-white/10 hover:bg-white/5";
-                row.innerHTML = `
-                    <td class="p-4">${item.name}</td>
-                    <td class="p-4 text-center">${item.total}</td>
-                    <td class="p-4 text-center">${item.received}</td>
-                    <td class="p-4 text-center font-bold ${remaining > 0 ? 'text-orange-400' : 'text-green-400'}">${remaining}</td>
-                    <td class="p-4"><button onclick="removeItem(${index})" class="text-red-400 hover:underline">Delete</button></td>
-                `;
-                list.appendChild(row);
+        function render() {
+            const container = document.getElementById('list');
+            container.innerHTML = currentList.map(item => `
+                <div class="flex justify-between border-b border-white/10 pb-2">
+                    <span>${item.name}</span>
+                    <span>Received: <b>${item.received}</b></span>
+                </div>
+            `).join('') || "No items yet.";
+        }
+
+        async function updateDB() {
+            const password = document.getElementById('pass').value;
+            const name = document.getElementById('name').value;
+            const received = parseInt(document.getElementById('received').value);
+
+            // Find item and update or add new
+            const index = currentList.findIndex(i => i.name === name);
+            if(index > -1) currentList[index].received = received;
+            else currentList.push({name, received});
+
+            const res = await fetch('/api/inventory', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ password, updatedList: currentList })
             });
+
+            if(res.ok) { alert('Updated for everyone!'); load(); }
+            else { alert('Wrong credentials!'); }
         }
-
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const newItem = {
-                name: document.getElementById('itemName').value,
-                total: parseInt(document.getElementById('totalReq').value),
-                received: parseInt(document.getElementById('received').value)
-            };
-            inventory.push(newItem);
-            form.reset();
-            saveAndRender();
-        });
-
-        function removeItem(index) {
-            inventory.splice(index, 1);
-            saveAndRender();
-        }
-
-        saveAndRender();
+        load();
     </script>
 </body>
 </html>

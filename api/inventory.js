@@ -1,5 +1,4 @@
-import { 
-   } from '@upstash/redis';
+import { Redis } from '@upstash/redis';
 
 const redis = Redis.fromEnv();
 const MASTER_PASSWORD = process.env.UPDATE_PASSWORD; // Set this in Vercel Settings

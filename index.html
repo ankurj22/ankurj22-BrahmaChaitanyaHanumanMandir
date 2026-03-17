@@ -8,45 +8,43 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background: #0f172a; color: white; }
-        /* Glass effect for the table container */
         .glass { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); }
-        /* Styling for inputs in edit mode */
         input { background: #1e293b; color: white; border: 1px solid #334155; padding: 4px 8px; border-radius: 4px; width: 80px; }
         .edit-only { display: none; }
-        .editing .edit-only { display: inline-block; }
+        .editing .edit-only { display: table-cell; } /* Changed to table-cell for column alignment */
+        .editing button.edit-only, .editing div.edit-only { display: inline-block; }
         .editing .view-only { display: none; }
     </style>
 </head>
 <body class="p-4 md:p-8">
-    <div class="max-w-6xl mx-auto" id="app">
-        <!-- Header Section -->
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <h1 class="text-2xl md:text-3xl font-bold text-blue-400">Inventory List</h1>
-            <div id="statusBadge" class="px-3 py-1 rounded text-xs md:text-sm bg-gray-700 font-medium">View Only</div>
+    <div class="max-w-7xl mx-auto" id="app">
+        <!-- Contact Header Section -->
+        <div class="text-center mb-8 border-b border-white/10 pb-6">
+            <h1 class="text-3xl md:text-4xl font-bold text-blue-400 mb-2">Inventory List</h1>
+            <p class="text-gray-400 text-sm md:text-base">Brahma Chaitanya Hanuman Mandir</p>
+            <p class="text-blue-300/80 font-medium mt-2">Contact: +91 98XXX XXXXX | +91 99XXX XXXXX</p>
+            <div id="statusBadge" class="inline-block mt-4 px-3 py-1 rounded text-xs bg-gray-700 font-medium">View Only</div>
         </div>
 
-        <!-- Responsive Table Container -->
         <div class="glass rounded-2xl overflow-hidden mb-8 shadow-xl">
-            <!--<h5>|| Jay Shree Ram ||</h5>
-            <h5>This is the list for upcoming Mahaprasad at Brahma Chaitanya Hanuman Mandir, Kharadi on the occasion of Hanuman Jayanti (2 April 2026).</h5>
-            <h5>All bhakta who want to contribute in this, can have a look at the list below and contribute as they want from the remaining items.</h5>
-            <h5>For doing any other seva apart from this list, please reach out to below contacts:</h5>
-            <h5> Shri Rameshwar Dubey - +91 84215 13947</h5>
-            <h5>|| Jay Shree Ram ||</h5> -->
             <div class="overflow-x-auto w-full">
-                <table class="w-full text-left min-w-[900px]">
+                <table class="w-full text-left min-w-[1000px]">
                     <thead class="bg-white/10 text-blue-300">
                         <tr>
                             <th class="p-3 md:p-4 text-sm md:text-base">Item Name</th>
                             <th class="p-3 md:p-4 text-sm md:text-base">Unit</th>
                             <th class="p-3 md:p-4 text-sm md:text-base">Required</th>
                             <th class="p-3 md:p-4 text-sm md:text-base">Received</th>
+                            <!-- HIDDEN IN VIEW MODE -->
+                            <th class="p-3 md:p-4 text-sm md:text-base edit-only">Received at Mandir</th>
                             <th class="p-3 md:p-4 text-sm md:text-base">Remaining</th>
                             <th class="p-3 md:p-4 text-sm md:text-base">Donators</th>
+                            <!-- HIDDEN IN VIEW MODE -->
+                            <th class="p-3 md:p-4 text-sm md:text-base edit-only">Donators Contact</th>
                         </tr>
                     </thead>
                     <tbody id="inventoryList">
-                        <tr><td colspan="6" class="p-8 text-center text-gray-500">Loading shared data...</td></tr>
+                        <tr><td colspan="8" class="p-8 text-center text-gray-500">Loading shared data...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -55,8 +53,8 @@
         <!-- Action Buttons -->
         <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
             <button id="manageBtn" onclick="enterManageMode()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 px-10 py-3 rounded-full font-bold transition-all shadow-lg active:scale-95">Manage</button>
-            <button id="saveBtn" onclick="saveChanges()" class="edit-only w-full sm:w-auto bg-green-600 hover:bg-green-500 px-10 py-3 rounded-full font-bold transition-all shadow-lg active:scale-95">Save All Changes</button>
-            <button id="addBtn" onclick="addNewRow()" class="edit-only w-full sm:w-auto bg-gray-700 hover:bg-gray-600 px-10 py-3 rounded-full font-bold shadow-lg">Add Item</button>
+            <button id="saveBtn" onclick="saveChanges()" class="edit-only hidden bg-green-600 hover:bg-green-500 px-10 py-3 rounded-full font-bold transition-all shadow-lg active:scale-95">Save All Changes</button>
+            <button id="addBtn" onclick="addNewRow()" class="edit-only hidden bg-gray-700 hover:bg-gray-600 px-10 py-3 rounded-full font-bold shadow-lg">Add Item</button>
         </div>
     </div>
 
@@ -71,7 +69,7 @@
                 inventory = await res.json();
                 render();
             } catch (e) {
-                document.getElementById('inventoryList').innerHTML = '<tr><td colspan="6" class="p-8 text-center text-red-400">Error loading data.</td></tr>';
+                document.getElementById('inventoryList').innerHTML = '<tr><td colspan="8" class="p-8 text-center text-red-400">Error loading data.</td></tr>';
             }
         }
 
@@ -80,7 +78,6 @@
             list.innerHTML = inventory.map((item, index) => {
                 const remaining = Math.max(0, item.total - item.received);
                 const unitDisplay = item.unit || "-";
-                const donatorsDisplay = item.donators || "No records";
                 
                 return `
                 <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
@@ -90,7 +87,7 @@
                     </td>
                     <td class="p-3 md:p-4">
                         <span class="view-only text-sm md:text-base text-gray-400">${unitDisplay}</span>
-                        <input class="edit-only text-sm" style="width:70px" type="text" value="${item.unit || ''}" placeholder="kg/pcs" onchange="updateLocal(${index}, 'unit', this.value)">
+                        <input class="edit-only text-sm" style="width:70px" type="text" value="${item.unit || ''}" placeholder="Unit" onchange="updateLocal(${index}, 'unit', this.value)">
                     </td>
                     <td class="p-3 md:p-4">
                         <span class="view-only text-sm md:text-base">${item.total}</span>
@@ -100,19 +97,26 @@
                         <span class="view-only text-sm md:text-base">${item.received}</span>
                         <input class="edit-only text-sm" type="number" value="${item.received}" onchange="updateLocal(${index}, 'received', this.value)">
                     </td>
+                    <td class="p-3 md:p-4 edit-only">
+                        <input class="text-sm" style="width:100px" type="text" value="${item.receivedAtMandir || ''}" placeholder="Location/Date" onchange="updateLocal(${index}, 'receivedAtMandir', this.value)">
+                    </td>
                     <td class="p-3 md:p-4 font-bold text-sm md:text-base ${remaining > 0 ? 'text-orange-400' : 'text-green-400'}">
                         ${remaining} <span class="text-[10px] uppercase opacity-60">${unitDisplay}</span>
                     </td>
                     <td class="p-3 md:p-4">
-                        <span class="view-only text-xs italic text-blue-200/60">${donatorsDisplay}</span>
+                        <span class="view-only text-xs italic text-blue-200/60">${item.donators || "None"}</span>
                         <input class="edit-only text-sm" style="width:180px" type="text" value="${item.donators || ''}" placeholder="Name - Qty" onchange="updateLocal(${index}, 'donators', this.value)">
                     </td>
+                    <td class="p-3 md:p-4 edit-only">
+                        <input class="text-sm" style="width:140px" type="text" value="${item.donatorsContact || ''}" placeholder="Phone Number" onchange="updateLocal(${index}, 'donatorsContact', this.value)">
+                    </td>
                 </tr>`;
-            }).join('') || '<tr><td colspan="6" class="p-8 text-center text-gray-500">No items found. Click "Manage" to add.</td></tr>';
+            }).join('') || '<tr><td colspan="8" class="p-8 text-center text-gray-500">No items found.</td></tr>';
         }
 
         function updateLocal(index, field, value) {
-            if (['name', 'unit', 'donators'].includes(field)) {
+            const textFields = ['name', 'unit', 'donators', 'receivedAtMandir', 'donatorsContact'];
+            if (textFields.includes(field)) {
                 inventory[index][field] = value;
             } else {
                 inventory[index][field] = parseInt(value) || 0;
@@ -121,7 +125,7 @@
         }
 
         function addNewRow() {
-            inventory.push({ name: "New Item", unit: "", total: 0, received: 0, donators: "" });
+            inventory.push({ name: "New Item", unit: "", total: 0, received: 0, receivedAtMandir: "", donators: "", donatorsContact: "" });
             render();
         }
 
@@ -140,9 +144,14 @@
                 isEditing = true;
                 document.getElementById('app').classList.add('editing');
                 document.getElementById('manageBtn').style.display = 'none';
+                
+                // Show hidden buttons
+                document.getElementById('saveBtn').classList.remove('hidden');
+                document.getElementById('addBtn').classList.remove('hidden');
+                
                 const badge = document.getElementById('statusBadge');
                 badge.innerText = "Edit Mode";
-                badge.className = "px-3 py-1 rounded text-xs bg-orange-600 font-bold animate-pulse";
+                badge.className = "inline-block mt-4 px-3 py-1 rounded text-xs bg-orange-600 font-bold animate-pulse";
                 render();
             } else {
                 alert("Invalid Password. Access Denied.");

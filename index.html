@@ -66,6 +66,7 @@
             <button id="manageBtn" onclick="enterManageMode()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 px-10 py-3 rounded-full font-bold transition-all shadow-lg active:scale-95">Manage</button>
             <button id="saveBtn" onclick="saveChanges()" class="edit-only hidden bg-green-600 hover:bg-green-500 px-10 py-3 rounded-full font-bold transition-all shadow-lg active:scale-95">Save All Changes</button>
             <button id="addBtn" onclick="addNewRow()" class="edit-only hidden bg-gray-700 hover:bg-gray-600 px-10 py-3 rounded-full font-bold shadow-lg">Add Item</button>
+            <button id="exportBtn" onclick="exportToExcel()" class="edit-only hidden bg-yellow-600 hover:bg-yellow-500 px-10 py-3 rounded-full font-bold shadow-lg active:scale-95">Export to Excel</button>
         </div>
     </div>
 
@@ -167,6 +168,17 @@
             } else {
                 alert("Invalid Password. Access Denied.");
             }
+        }
+
+        function exportToExcel() {
+            let table = document.getElementById("inventoryTable");
+            let html = table.outerHTML;
+            // Basic data URI for Excel
+            let url = 'data:application/vnd.ms-excel,' + encodeURIComponent(html);
+            let link = document.createElement("a");
+            link.download = "Inventory_List.xls";
+            link.href = url;
+            link.click();
         }
 
         async function saveChanges() {

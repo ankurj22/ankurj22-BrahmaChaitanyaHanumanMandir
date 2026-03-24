@@ -176,12 +176,12 @@ function exportToExcel() {
     const dataForExcel = inventory.map(item => ({
         "Item Name": item.name,
         "Unit": item.unit || "-",
-        "Total Needed": item.total,
+        "Required": item.total,
         "Received": item.received,
         "Remaining": Math.max(0, item.total - item.received),
-        "Location/Date": item.receivedAtMandir || "",
+        "Received at Mandir": item.receivedAtMandir || "",
         "Donators": item.donators || "None",
-        "Contact": item.donatorsContact || ""
+        "Donators Contact": item.donatorsContact || ""
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(dataForExcel);

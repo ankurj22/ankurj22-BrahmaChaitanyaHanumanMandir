@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventory - BrahmaChaitanyaHanumanMandir</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.sheetjs.com"></script>
     <style>
         body { background: #0f172a; color: white; }
         .glass { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); }
@@ -170,16 +171,24 @@
             }
         }
 
-        function exportToExcel() {
-            let table = document.getElementById("inventoryTable");
-            let html = table.outerHTML;
-            // Basic data URI for Excel
-            let url = 'data:application/vnd.ms-excel,' + encodeURIComponent(html);
-            let link = document.createElement("a");
-            link.download = "Inventory_List.xls";
-            link.href = url;
-            link.click();
-        }
+function exportToExcel() {
+    // Create a clean array of objects from your 'inventory' data
+    const dataForExcel = inventory.map(item => ({
+        "Item Name": item.name,
+        "Unit": item.unit || "-",
+        "Total Needed": item.total,
+        "Received": item.received,
+        "Remaining": Math.max(0, item.total - item.received),
+        "Location/Date": item.receivedAtMandir || "",
+        "Donators": item.donators || "None",
+        "Contact": item.donatorsContact || ""
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataForExcel);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Inventory");
+    XLSX.writeFile(workbook, "Inventory_List.xlsx");
+}
 
         async function saveChanges() {
             const res = await fetch('/api/inventory', {
